@@ -1,6 +1,6 @@
-package net.isger.brick.util.ref;
+package net.isger.brick.util.reflect.type;
 
-public class ArrayAdapter implements TypeAdapter {
+public class CollectionAdapter implements TypeAdapter {
 
     @Override
     public boolean isSupport(Class<?> type) {

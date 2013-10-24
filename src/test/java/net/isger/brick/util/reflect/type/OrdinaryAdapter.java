@@ -1,13 +1,11 @@
-package net.isger.brick.util.ref;
+package net.isger.brick.util.reflect.type;
 
 import java.util.Collection;
 import java.util.Map;
 
 import net.isger.brick.util.Reflects;
 
-import com.sun.org.apache.bcel.internal.generic.Type;
-
-public class DefaultAdapter implements TypeAdapter {
+public class OrdinaryAdapter implements TypeAdapter {
 
     /**
      * 支持适配类型
@@ -16,10 +14,9 @@ public class DefaultAdapter implements TypeAdapter {
      * @return
      */
     public boolean isSupport(Class<?> type) {
-        // 不支持数组、集合、列表、定义类型转换
-        return !(type.isArray() || Map.class.isAssignableFrom(type)
-                || Collection.class.isAssignableFrom(type) || Type.class
-                    .isAssignableFrom(type));
+        // 不支持数组、集合、列表
+        return !(type.isArray() || Map.class.isAssignableFrom(type) || Collection.class
+                .isAssignableFrom(type));
     }
 
     @SuppressWarnings("unchecked")

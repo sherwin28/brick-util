@@ -5,16 +5,13 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 import net.isger.brick.util.anno.Ignore;
-import net.isger.brick.util.ref.ArrayAdapter;
-import net.isger.brick.util.ref.CollectionAdapter;
-import net.isger.brick.util.ref.DefaultAdapter;
-import net.isger.brick.util.ref.MapAdapter;
-import net.isger.brick.util.ref.TypeAdapter;
+import net.isger.brick.util.reflect.type.TypeAdapter;
+import net.isger.brick.util.reflect.type.TypeAdapters;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,51 +24,9 @@ import org.slf4j.LoggerFactory;
  */
 public class Reflects {
 
-    private static final Logger log = LoggerFactory.getLogger(Reflects.class);
-
-    private static final Vector<TypeAdapter> DEF_ADAPTERS;
-
-    private static Vector<TypeAdapter> adapters;
-
-    static {
-        DEF_ADAPTERS = new Vector<TypeAdapter>();
-        DEF_ADAPTERS.add(new DefaultAdapter());
-        DEF_ADAPTERS.add(new ArrayAdapter());
-        DEF_ADAPTERS.add(new CollectionAdapter());
-        DEF_ADAPTERS.add(new MapAdapter());
-        adapters = new Vector<TypeAdapter>();
-    }
+    private static final Logger LOG = LoggerFactory.getLogger(Reflects.class);
 
     private Reflects() {
-    }
-
-    /**
-     * 注册类型适配器
-     * 
-     * @param type
-     * @param adapter
-     */
-    public static void register(TypeAdapter adapter) {
-        if (!adapters.contains(adapter)) {
-            adapters.add(adapter);
-        }
-    }
-
-    /**
-     * 获取类型适配器
-     * 
-     * @param type
-     * @return
-     */
-    public static List<TypeAdapter> getTypeAdapters(Class<?> type) {
-        List<TypeAdapter> result = new ArrayList<TypeAdapter>();
-        for (TypeAdapter adapter : adapters) {
-            if (adapter.isSupport(type)) {
-                result.add(adapter);
-            }
-        }
-        result.addAll(DEF_ADAPTERS);
-        return result;
     }
 
     public static <T> T toInstance(Class<T> type, Object value) {
@@ -128,12 +83,12 @@ public class Reflects {
      * @param value
      */
     public static void set(Object instance, Field field, Object value) {
-        Class<?> fieldType = field.getType();
-        adapte: if (value != null && !fieldType.isInstance(value)) {
+        Class<?> type = field.getType();
+        adapte: if (value != null && !type.isInstance(value)) {
             Object aval = null;
-            List<TypeAdapter> adapters = getTypeAdapters(fieldType);
-            for (TypeAdapter adapter : adapters) {
-                aval = adapter.adapte(fieldType, value);
+            Iterator<TypeAdapter> adapters = TypeAdapters.getAdapter(type);
+            while (adapters.hasNext()) {
+                aval = adapters.next().adapte(type, value);
                 if (aval != null) {
                     value = aval;
                     break adapte;
@@ -159,8 +114,7 @@ public class Reflects {
             try {
                 values.put(f.getName(), f.get(instance));
             } catch (Exception e) {
-                log.warn("get field {} value is fail: {}", f.getName(),
-                        e.getMessage());
+                LOG.warn("Get field [{}] value is fail.", f.getName(), e);
             }
         }
         return values;

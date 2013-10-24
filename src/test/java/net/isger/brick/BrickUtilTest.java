@@ -3,6 +3,8 @@ package net.isger.brick;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import net.isger.brick.util.Hitchers;
+import net.isger.brick.util.hicher.Hitcher;
 
 public class BrickUtilTest extends TestCase {
 
@@ -15,6 +17,9 @@ public class BrickUtilTest extends TestCase {
     }
 
     public void testUtil() {
+        Hitcher hitcher = Hitchers
+                .getHitcher("net/isger/brick/util/reflect/type");
+        hitcher.hitch();
         assertTrue(true);
     }
 

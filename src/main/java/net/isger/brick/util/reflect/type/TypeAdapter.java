@@ -1,4 +1,4 @@
-package net.isger.brick.util.ref;
+package net.isger.brick.util.reflect.type;
 
 public interface TypeAdapter {
 

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN" "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+  <appender name="STDOUT" class="org.apache.log4j.ConsoleAppender">
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%-5p [%d{HH:mm:ss}] (%c{1}.java:%L) - %m%n" />
+    </layout>
+  </appender>
+  <appender name="DAILYFILE" class="org.apache.log4j.DailyRollingFileAppender">
+    <param name="File" value="E:/Other/logs/brick-util.log" />
+    <param name="DatePattern" value=".yyyy-MM-dd" />
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%t] %-5p %d{HH:mm:ss} (%C:%L) - %m%n" />
+    </layout>
+  </appender>
+
+  <!-- logging level for loggers from other libraries -->
+  <logger name="net.isger">
+    <level value="DEBUG" />
+  </logger>
+
+  <!-- for all other loggers log only debug and above log messages -->
+  <root>
+    <priority value="INFO" />
+    <appender-ref ref="STDOUT" />
+    <appender-ref ref="DAILYFILE" />
+  </root>
+</log4j:configuration> 
+
