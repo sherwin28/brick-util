@@ -15,20 +15,21 @@ import java.lang.annotation.Target;
 @Target({ ElementType.FIELD, ElementType.METHOD, ElementType.TYPE })
 public @interface Ignore {
 
-    /** 默认方式 */
-    public static final int DEFAULT = 0;
+    public enum Mode {
 
-    /** 完整方式 */
-    public static final int COMPLETE = 1;
+        /** 排除 */
+        EXCLUDE,
 
-    /** 声明方式 */
-    public static final int DECLARE = 2;
+        /** 引入 */
+        INCLUDE;
+
+    }
 
     /**
-     * 忽略标识
+     * 忽略模式
      * 
      * @return
      */
-    int value() default DEFAULT;
+    Mode mode() default Mode.EXCLUDE;
 
 }

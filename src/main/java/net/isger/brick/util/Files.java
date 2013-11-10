@@ -23,6 +23,18 @@ public class Files {
     private Files() {
     }
 
+    public static boolean isJar(String path) {
+        JarInputStream jis = null;
+        try {
+            jis = openJarIS(path);
+            return jis.getNextJarEntry() != null;
+        } catch (IOException e) {
+            return false;
+        } finally {
+            close(jis);
+        }
+    }
+
     /**
      * 打开Jar输出流
      * 

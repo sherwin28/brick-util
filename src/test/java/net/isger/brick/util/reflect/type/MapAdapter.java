@@ -4,15 +4,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.isger.brick.util.Reflects;
+import net.isger.brick.util.reflect.Conversion;
 
-public class MapAdapter implements TypeAdapter {
+public class MapAdapter {
 
     public boolean isSupport(Class<?> type) {
         return Map.class.isAssignableFrom(type);
     }
 
     @SuppressWarnings("rawtypes")
-    public Object adapte(Class<?> type, Object value) {
+    public Object convert(Class<?> type, Object value) {
         Object result = null;
         // 转换为集合
         if (Map.class.isAssignableFrom(type)) {

@@ -5,7 +5,7 @@ import java.util.Map;
 
 import net.isger.brick.util.Reflects;
 
-public class OrdinaryAdapter implements TypeAdapter {
+public class OrdinaryAdapter {
 
     /**
      * 支持适配类型
@@ -20,7 +20,7 @@ public class OrdinaryAdapter implements TypeAdapter {
     }
 
     @SuppressWarnings("unchecked")
-    public Object adapte(Class<?> type, Object value) {
+    public Object convert(Class<?> type, Object value) {
         Object result = null;
         Class<?> valueType = value.getClass();
         // 所属实例直接赋值
@@ -42,7 +42,7 @@ public class OrdinaryAdapter implements TypeAdapter {
         }
         // 转换为对象（值为集合）
         else if (Map.class.isAssignableFrom(valueType)) {
-            result = Reflects.toInstance(type, (Map<String, Object>) value);
+            result = Reflects.newInstance(type, (Map<String, Object>) value);
         }
         return result;
     }

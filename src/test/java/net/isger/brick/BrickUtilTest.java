@@ -3,8 +3,7 @@ package net.isger.brick;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import net.isger.brick.util.Hitchers;
-import net.isger.brick.util.hicher.Hitcher;
+import net.isger.brick.util.reflect.Standin;
 
 public class BrickUtilTest extends TestCase {
 
@@ -17,10 +16,17 @@ public class BrickUtilTest extends TestCase {
     }
 
     public void testUtil() {
-        Hitcher hitcher = Hitchers
-                .getHitcher("net/isger/brick/util/reflect/type");
-        hitcher.hitch();
+        // System.out.println(Hitchers
+        // .getHitcher("net/isger/brick/util/reflect/conversion"));
+        // System.out.println(Void.TYPE.getName());
+        TestBean testBean = (TestBean) new Standin(TestBean.class).getSource();
+        testBean.test();
         assertTrue(true);
     }
 
+    public static interface TestBean {
+
+        public void test();
+
+    }
 }
