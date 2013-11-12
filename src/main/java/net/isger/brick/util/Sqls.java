@@ -9,7 +9,9 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +26,7 @@ import net.isger.brick.util.anno.Alias;
  * @author issing
  * 
  */
-public class SQL {
+public class Sqls {
 
     private static Map<Class<?>, Properties> sqls;
 
@@ -62,9 +64,30 @@ public class SQL {
         return modify(getSQL(clazz, id, args), values, conn);
     }
 
-    public static int modify(SQLEntry entry, Connection conn)
+    public static int[] modify(Class<?> clazz, String id, Object[][] values,
+            Connection conn, Object... args) {
+        return modify(getSQL(clazz, id, args), values, conn);
+    }
+
+    public static Object modify(SQLEntry entry, Connection conn)
             throws RuntimeException {
-        return modify(entry.getSQL(), entry.getValues(), conn);
+        String sql = entry.getSQL();
+        Object values = entry.getValues();
+        if (values instanceof Object[][]) {
+            return modify(sql, (Object[][]) values, conn);
+        }
+        return modify(sql, (Object[]) values, conn);
+    }
+
+    public static int[] modify(String sql, Object[][] values, Connection conn) {
+        PreparedStatement stat = getStatement(sql, values, conn);
+        try {
+            return stat.executeBatch();
+        } catch (SQLException e) {
+            throw new RuntimeException(e.getMessage(), e.getCause());
+        } finally {
+            close(stat);
+        }
     }
 
     public static int modify(String sql, Object[] values, Connection conn)
@@ -111,11 +134,41 @@ public class SQL {
             int amount = 0;
             if (values != null) {
                 for (Object value : values) {
-                    stat.setObject(++amount, value);
+                    if (value instanceof Date) {
+                        stat.setObject(++amount,
+                                new Timestamp(((Date) value).getTime()));
+                    } else {
+                        stat.setObject(++amount, value);
+                    }
                 }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+        return stat;
+    }
+
+    private static PreparedStatement getStatement(String sql,
+            Object[][] values, Connection conn) throws RuntimeException {
+        PreparedStatement stat = null;
+        try {
+            stat = conn.prepareStatement(sql);
+            if (values != null) {
+                for (Object[] batch : values) {
+                    int amount = 0;
+                    for (Object value : batch) {
+                        if (value instanceof Date) {
+                            stat.setObject(++amount, new Timestamp(
+                                    ((Date) value).getTime()));
+                        } else {
+                            stat.setObject(++amount, value);
+                        }
+                    }
+                    stat.addBatch();
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e.getMessage(), e.getCause());
         }
         return stat;
     }
@@ -175,13 +228,18 @@ public class SQL {
         return String.format(props.getProperty(id), args);
     }
 
-    public static SQLEntry getQueryEntry(Object bean) {
-        Alias table = bean.getClass().getAnnotation(Alias.class);
+    private static String getTableName(Class<?> clazz) {
+        Alias table = clazz.getAnnotation(Alias.class);
         String tableName = table == null ? null : table.value();
         if (tableName == null) {
-            tableName = bean.getClass().getName();
+            tableName = clazz.getSimpleName();
         }
-        return getQueryEntry(tableName, Reflects.toMap(bean));
+        return tableName;
+    }
+
+    public static SQLEntry getQueryEntry(Object bean) {
+        return getQueryEntry(getTableName(bean.getClass()),
+                Reflects.toMap(bean));
     }
 
     public static SQLEntry getQueryEntry(String tableName,
@@ -209,18 +267,13 @@ public class SQL {
         return sqlEntry;
     }
 
-    public static SQLEntry getUpdateEntry(Object oldBean, Object newBean) {
-        Alias table = oldBean.getClass().getAnnotation(Alias.class);
-        String tableName = table == null ? null : table.value();
-        if (tableName == null) {
-            tableName = oldBean.getClass().getName();
-        }
-        return getUpdateEntry(tableName, Reflects.toMap(oldBean),
-                Reflects.toMap(newBean));
+    public static SQLEntry getUpdateEntry(Object newBean, Object oldBean) {
+        return getUpdateEntry(getTableName(newBean.getClass()),
+                Reflects.toMap(newBean), Reflects.toMap(oldBean));
     }
 
     public static SQLEntry getUpdateEntry(String tableName,
-            Map<String, Object> oldValues, Map<String, Object> newValues) {
+            Map<String, Object> newValues, Map<String, Object> oldValues) {
         SQLEntry updateEntry = new SQLEntry();
         updateEntry.sql = new StringBuffer(512);
         updateEntry.sql.append("update ").append(tableName).append(" set ");
@@ -248,12 +301,8 @@ public class SQL {
     }
 
     public static SQLEntry getDeleteEntry(Object bean) {
-        Alias table = bean.getClass().getAnnotation(Alias.class);
-        String tableName = table == null ? null : table.value();
-        if (tableName == null) {
-            tableName = bean.getClass().getName();
-        }
-        return getDeleteEntry(tableName, Reflects.toMap(bean));
+        return getDeleteEntry(getTableName(bean.getClass()),
+                Reflects.toMap(bean));
     }
 
     public static SQLEntry getDeleteEntry(String tableName,
@@ -277,12 +326,8 @@ public class SQL {
     }
 
     public static SQLEntry getInsertEntry(Object bean) {
-        Alias table = bean.getClass().getAnnotation(Alias.class);
-        String tableName = table == null ? null : table.value();
-        if (tableName == null) {
-            tableName = bean.getClass().getName();
-        }
-        return getInsertEntry(tableName, Reflects.toMap(bean));
+        return getInsertEntry(getTableName(bean.getClass()),
+                Reflects.toMap(bean));
     }
 
     public static SQLEntry getInsertEntry(String tableName,

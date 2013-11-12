@@ -60,7 +60,7 @@ public class Standin extends ClassLoader {
         for (Constructor<?> constructor : constructors) {
             mod = constructor.getModifiers();
             if (Modifier.isProtected(mod) || Modifier.isPublic(mod)) {
-                argTypeNames = MethodSeal.getArgTypeNames(constructor
+                argTypeNames = TYPE.getArgTypeNames(constructor
                         .getParameterTypes());
                 ms = cs.makeMethod(ACCESS.PUBLIC.value, "void", "<init>",
                         argTypeNames);
@@ -82,8 +82,7 @@ public class Standin extends ClassLoader {
             mod = method.getModifiers();
             if ((Modifier.isProtected(mod) || Modifier.isPublic(mod))
                     && !(Modifier.isFinal(mod) || Modifier.isStatic(mod))) {
-                argTypeNames = MethodSeal.getArgTypeNames(method
-                        .getParameterTypes());
+                argTypeNames = TYPE.getArgTypeNames(method.getParameterTypes());
                 ms = cs.makeMethod(ACCESS.PUBLIC.value, method.getReturnType()
                         .getName(), method.getName(), argTypeNames);
                 if (Modifier.isAbstract(mod)) {

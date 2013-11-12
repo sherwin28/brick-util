@@ -1,6 +1,7 @@
 package net.isger.brick.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -9,6 +10,7 @@ import java.util.Map;
 import net.isger.brick.util.anno.Ignore;
 import net.isger.brick.util.anno.Ignore.Mode;
 import net.isger.brick.util.reflect.BoundField;
+import net.isger.brick.util.reflect.BoundMethod;
 import net.isger.brick.util.reflect.Constructor;
 import net.isger.brick.util.reflect.Excluder;
 
@@ -118,6 +120,61 @@ public class Reflects {
             return null;
         }
         return new BoundField(field);
+    }
+
+    /**
+     * 获取绑定方法信息
+     * 
+     * @param clazz
+     * @return
+     */
+    public static BoundMethod[] getBoundMethods(Class<?> clazz) {
+        Map<String, BoundMethod> result = new LinkedHashMap<String, BoundMethod>();
+        // 跳过接口以及原始数据类型
+        if (Object.class.isAssignableFrom(clazz)) {
+            Ignore ignore;
+            Mode classMode;
+            Method[] methods;
+            BoundMethod boundMethod;
+            while (clazz != Object.class) {
+                // 忽略指定类
+                ignore = clazz.getAnnotation(Ignore.class);
+                classMode = ignore != null ? ignore.mode() : Mode.INCLUDE;
+                // 导入声明字段
+                methods = clazz.getDeclaredMethods();
+                for (Method method : methods) {
+                    if (!Excluder.exclude(method)
+                            && (boundMethod = createBoundMethod(method,
+                                    classMode)) != null) {
+                        boundMethod = result.put(boundMethod.getName(),
+                                boundMethod);
+                        if (boundMethod != null) {
+                            throw new IllegalArgumentException(clazz.getName()
+                                    + " declares multiple methods named "
+                                    + boundMethod.getName());
+                        }
+                    }
+                }
+                clazz = clazz.getSuperclass();
+            }
+        }
+        return result.values().toArray(new BoundMethod[result.size()]);
+    }
+
+    /**
+     * 创建绑定方法信息
+     * 
+     * @param method
+     * @param classMode
+     * @return
+     */
+    private static BoundMethod createBoundMethod(Method method, Mode classMode) {
+        Ignore ignore = method.getAnnotation(Ignore.class);
+        Mode methodMode = ignore != null ? ignore.mode() : classMode;
+        if (methodMode.equals(Mode.EXCLUDE)) {
+            return null;
+        }
+        return new BoundMethod(method);
     }
 
     /**
@@ -287,7 +344,6 @@ public class Reflects {
                         e);
             }
         }
-        values.put(KEY_CLASS, clazz);
         return values;
     }
 

@@ -64,7 +64,7 @@ public class Hitcher extends ClassLoader {
         for (URL url : urls) {
             for (String name : Scanner.scan(url, FILTER)) {
                 className = (path + name.replaceFirst("[.]class$", ""))
-                        .replaceAll("/", ".");
+                        .replaceAll("[\\\\/]", ".");
                 hitchOperate = className + ".hitch(obj)";
                 if (ms.getOperateMark(hitchOperate) != null) {
                     LOG.warn("Multiple to hitching {}", className);

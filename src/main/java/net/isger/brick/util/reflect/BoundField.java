@@ -35,7 +35,7 @@ public class BoundField {
         try {
             field.set(instance, value);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Failure to setting field "
+            throw new IllegalStateException("Failure to setting field "
                     + getName(), e);
         }
     }

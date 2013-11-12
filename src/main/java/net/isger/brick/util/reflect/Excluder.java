@@ -1,6 +1,7 @@
 package net.isger.brick.util.reflect;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import net.isger.brick.util.hitcher.Director;
 
@@ -35,6 +36,10 @@ public class Excluder extends Director {
     }
 
     public static boolean exclude(Field field) {
+        return false;
+    }
+
+    public static boolean exclude(Method method) {
         return false;
     }
 
