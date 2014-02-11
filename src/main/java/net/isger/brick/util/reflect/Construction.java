@@ -4,6 +4,6 @@ public interface Construction {
 
     public boolean isSupport(Class<?> clazz);
 
-    public Object construct(Object... args);
+    public <T> T construct(Class<? extends T> clazz, Object... args);
 
 }

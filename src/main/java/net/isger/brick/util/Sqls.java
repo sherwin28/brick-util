@@ -34,6 +34,30 @@ public class Sqls {
         sqls = new HashMap<Class<?>, Properties>();
     }
 
+    public static String toFieldName(String columnName) {
+        StringBuffer fieldName = new StringBuffer(32);
+        char[] chs = columnName.toLowerCase().toCharArray();
+        int size = chs.length;
+        for (int i = 0; i < size; i++) {
+            fieldName.append(chs[i] == '_' ? Character.toUpperCase(chs[++i])
+                    : chs[i]);
+        }
+        return fieldName.toString();
+    }
+
+    public static String toColumnName(String fieldName) {
+        StringBuffer columnName = new StringBuffer(32);
+        char[] chs = fieldName.toCharArray();
+        chs[0] = Character.toLowerCase(chs[0]);
+        for (char ch : chs) {
+            if (Character.isUpperCase(ch)) {
+                columnName.append('_');
+            }
+            columnName.append(Character.toLowerCase(ch));
+        }
+        return columnName.toString();
+    }
+
     public static Object[] translate(ResultSet resultSet) {
         List<Object[]> result = new ArrayList<Object[]>();
         String[] columns = null;
@@ -42,9 +66,8 @@ public class Sqls {
             int count = metaData.getColumnCount();
             columns = new String[count];
             for (int i = 0; i < count;) {
-                columns[i] = metaData.getColumnLabel(++i).toLowerCase();
+                columns[i] = toFieldName(metaData.getColumnLabel(++i));
             }
-
             Object[] info = null;
             while (resultSet.next()) {
                 info = new Object[count];

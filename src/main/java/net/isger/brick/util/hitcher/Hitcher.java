@@ -13,14 +13,17 @@ import net.isger.brick.blue.Marks.OPCODES;
 import net.isger.brick.blue.Marks.TYPE;
 import net.isger.brick.blue.Marks.VERSION;
 import net.isger.brick.blue.MethodSeal;
-import net.isger.brick.util.hitcher.scan.ScanFilter;
+import net.isger.brick.util.scanner.Scanner;
+import net.isger.brick.util.scanner.scan.ScanFilter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Hitcher extends ClassLoader {
 
-    private static final String HITCHER = "Hitcher";
+    private static final String HITCH_STATION = "HitchStation";
+
+    private static final String HITCH_METHOD = "hitch";
 
     private static final String HITCH_SUFFIX = "Hitch.class";
 
@@ -28,7 +31,7 @@ public class Hitcher extends ClassLoader {
 
     private static final ScanFilter FILTER;
 
-    private Hitcher target;
+    private Class<?> station;
 
     private int amount;
 
@@ -48,17 +51,21 @@ public class Hitcher extends ClassLoader {
     protected Hitcher() {
     }
 
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        return this.getClass().getClassLoader().loadClass(name);
+    }
+
     public Hitcher(String path) {
         Set<URL> urls = findHitchURLs(path);
-        // public class HitchStation extends Hitcher {
+        // public class HitchStation {
         ClassSeal cs = ClassSeal.create(VERSION.V0104.value,
-                ACCESS.PUBLIC.value, HITCHER, Hitcher.class.getName());
+                ACCESS.PUBLIC.value, HITCH_STATION, TYPE.OBJECT.name);
         // public HitchStation() {}
         MethodSeal ms = cs.makeMethod(ACCESS.PUBLIC.value, "void", "<init>");
         ms.coding("this", "super()");
-        // public boolean hitch(Object source) {
-        ms = cs.makeMethod(ACCESS.PUBLIC.value, TYPE.BOOLEAN.name, "hitch",
-                TYPE.OBJECT.name);
+        // public static boolean hitch(Object source) {
+        ms = cs.makeMethod(ACCESS.PUBLIC.value | ACCESS.STATIC.value,
+                TYPE.BOOLEAN.name, HITCH_METHOD, TYPE.OBJECT.name);
         String className = null;
         String hitchOperate = null;
         for (URL url : urls) {
@@ -72,7 +79,7 @@ public class Hitcher extends ClassLoader {
                     // TODO 搭载过程未做异常处理
                     ms.markOperate(hitchOperate, className,
                             OPCODES.INVOKESTATIC.value, TYPE.VOID.name,
-                            "hitch", TYPE.OBJECT.name);
+                            HITCH_METHOD, TYPE.OBJECT.name);
                     ms.coding(null, hitchOperate, MISC.arg(0));
                     amount++;
                 }
@@ -84,11 +91,10 @@ public class Hitcher extends ClassLoader {
         // }
         byte[] code = net.isger.brick.blue.Compiler.compile(cs);
         try {
-            target = (Hitcher) this.defineClass(HITCHER, code, 0, code.length)
-                    .newInstance();
-        } catch (Exception e) {
+            station = this.defineClass(HITCH_STATION, code, 0, code.length);
+        } catch (Throwable e) {
             throw new IllegalStateException("Failure create hitch station for "
-                    + path);
+                    + path, e);
         }
     }
 
@@ -119,12 +125,13 @@ public class Hitcher extends ClassLoader {
         boolean isHitch = false;
         if (amount > 0) {
             try {
-                target.hitch(source);
+                station.getMethod(HITCH_METHOD, Object.class).invoke(station,
+                        source);
                 isHitch = true;
             } catch (Exception e) {
+                LOG.warn("Failure to hitch resource", e);
             }
         }
         return isHitch;
     }
-
 }

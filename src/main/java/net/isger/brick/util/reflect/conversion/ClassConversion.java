@@ -13,7 +13,7 @@ public class ClassConversion implements Conversion {
         return type.equals(Class.class);
     }
 
-    public Object convert(Object value) {
+    public Object convert(Class<?> type, Object value) {
         if (value instanceof String) {
             try {
                 return Class.forName((String) value);

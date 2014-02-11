@@ -5,7 +5,9 @@ import java.security.PrivilegedAction;
 import java.util.StringTokenizer;
 
 import net.isger.brick.util.Hitchers;
+import net.isger.brick.util.anno.Ignore;
 
+@Ignore
 public abstract class Director {
 
     protected static final int UNDIRECTED = 0;
@@ -70,7 +72,7 @@ public abstract class Director {
                         return System.getProperty(key, def);
                     }
                 });
-        if (hitchPath.indexOf(def) == -1) {
+        if (def != null && hitchPath.indexOf(def) == -1) {
             hitchPath += TOKEN_SEPARETOR + def;
         }
         return hitchPath;

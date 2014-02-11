@@ -3,9 +3,12 @@ package net.isger.brick.util;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import net.isger.brick.util.anno.Ignore;
 import net.isger.brick.util.anno.Ignore.Mode;
@@ -25,9 +28,9 @@ import org.slf4j.LoggerFactory;
  */
 public class Reflects {
 
-    private static final Logger LOG;
-
     private static final String KEY_CLASS = "class";
+
+    private static final Logger LOG;
 
     static {
         LOG = LoggerFactory.getLogger(Reflects.class);
@@ -47,18 +50,18 @@ public class Reflects {
         // 跳过接口以及原始数据类型
         if (!clazz.isInterface() || Object.class.isAssignableFrom(clazz)) {
             Ignore ignore;
-            Mode classMode;
+            Mode ignoreMode;
             Field[] fields;
             BoundField boundField;
             while (clazz != Object.class) {
                 // 忽略指定类
                 ignore = clazz.getAnnotation(Ignore.class);
-                classMode = ignore != null ? ignore.mode() : Mode.INCLUDE;
+                ignoreMode = ignore != null ? ignore.mode() : Mode.INCLUDE;
                 // 导入声明字段
                 fields = clazz.getDeclaredFields();
                 for (Field field : fields) {
                     if (!Excluder.exclude(field)
-                            && (boundField = createBoundField(field, classMode)) != null) {
+                            && (boundField = createBoundField(field, ignoreMode)) != null) {
                         boundField = result.put(boundField.getName(),
                                 boundField);
                         if (boundField != null) {
@@ -82,28 +85,12 @@ public class Reflects {
      * @return
      */
     public static BoundField getBoundField(Class<?> clazz, String fieldName) {
-        BoundField boundField = null;
-        // 跳过接口以及原始数据类型
-        if (!clazz.isInterface() || Object.class.isAssignableFrom(clazz)) {
-            Ignore ignore;
-            Mode classMode;
-            Field field;
-            while (clazz != Object.class) {
-                // 忽略指定类
-                ignore = clazz.getAnnotation(Ignore.class);
-                classMode = ignore != null ? ignore.mode() : Mode.INCLUDE;
-                try {
-                    field = clazz.getDeclaredField(fieldName);
-                    if (!Excluder.exclude(field)
-                            && (boundField = createBoundField(field, classMode)) != null) {
-                        break;
-                    }
-                } catch (NoSuchFieldException e) {
-                }
-                clazz = clazz.getSuperclass();
+        for (BoundField field : getBoundFields(clazz)) {
+            if (field.match(fieldName)) {
+                return field;
             }
         }
-        return boundField;
+        return null;
     }
 
     /**
@@ -217,9 +204,8 @@ public class Reflects {
      * @param values
      * @return
      */
-    @SuppressWarnings("unchecked")
     public static <T> T newInstance(Class<T> clazz, Map<String, Object> values) {
-        T instance = (T) newInstance(clazz);
+        T instance = newInstance(clazz);
         if (values != null && values.size() > 0) {
             toInstance(instance, values);
         }
@@ -246,7 +232,7 @@ public class Reflects {
      * @param clazz
      * @return
      */
-    public static Object newInstance(Class<?> clazz) {
+    public static <T> T newInstance(Class<? extends T> clazz) {
         if (isAbstract(clazz)) {
             // return new Standin(clazz).getSource();
             throw new IllegalStateException(
@@ -297,7 +283,13 @@ public class Reflects {
      * @param values
      * @return
      */
+    @SuppressWarnings("unchecked")
     public static void toInstance(Object instance, Map<String, Object> values) {
+        if (instance instanceof Map) {
+            ((Map<String, Object>) instance).putAll(values);
+            return;
+        }
+        values = canonicalize(values);
         String fieldName = null;
         try {
             for (BoundField field : getBoundFields(instance.getClass())) {
@@ -311,18 +303,58 @@ public class Reflects {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> canonicalize(Map<String, Object> values) {
+        Map<String, Object> result = new HashMap<String, Object>();
+        int index;
+        String key;
+        String subKey;
+        Object value;
+        Map<String, Object> container;
+        for (Entry<String, Object> entry : values.entrySet()) {
+            if (entry.getValue() == null) {
+                continue;
+            }
+            key = entry.getKey();
+            index = key.indexOf(".");
+            if (index == -1) {
+                subKey = null;
+            } else {
+                subKey = key.substring(index + 1);
+                key = key.substring(0, index);
+            }
+            value = result.get(key);
+            if (value == null) {
+                if (subKey == null) {
+                    result.put(key, entry.getValue());
+                    continue;
+                }
+                container = new HashMap<String, Object>();
+                result.put(key, container);
+            } else if (value instanceof Map) {
+                container = (Map<String, Object>) value;
+                if (subKey == null) {
+                    throw new IllegalStateException();
+                }
+            } else {
+                throw new IllegalStateException();
+            }
+            container.put(subKey, entry.getValue());
+        }
+        return result;
+    }
+
     /**
      * 设置实例属性值
      * 
      * @param instance
-     * @param field
+     * @param name
      * @param value
      */
-    public static void toInstance(Object instance, String fieldName,
-            Object value) {
-        BoundField field = getBoundField(instance.getClass(), fieldName);
+    public static void toField(Object instance, String name, Object value) {
+        BoundField field = getBoundField(instance.getClass(), name);
         if (field == null) {
-            throw new IllegalStateException("Not found field by " + fieldName);
+            throw new IllegalStateException("Not found field by " + name);
         }
         field.setValue(instance, value);
     }
@@ -345,6 +377,63 @@ public class Reflects {
             }
         }
         return values;
+    }
+
+    public static <T> List<T> toList(Class<T> clazz, Object[] gridModel) {
+        List<T> result = new ArrayList<T>();
+        String[] columns = (String[]) gridModel[0];
+        Object[][] rows = (Object[][]) gridModel[1];
+        int size = columns.length;
+        int count = rows.length;
+        T bean;
+        BoundField field;
+        for (int i = 0; i < count; i++) {
+            bean = Reflects.newInstance(clazz);
+            for (int j = 0; j < size; j++) {
+                field = getBoundField(clazz, columns[j]);
+                if (field != null) {
+                    field.setValue(bean, rows[i][j]);
+                }
+            }
+            result.add(bean);
+        }
+        return result;
+    }
+
+    public static List<Map<String, Object>> toListMap(Object[] gridModel) {
+        List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+        String[] columns = (String[]) gridModel[0];
+        Object[][] rows = (Object[][]) gridModel[1];
+        int size = columns.length;
+        int count = rows.length;
+        Map<String, Object> bean;
+        for (int i = 0; i < count; i++) {
+            bean = new HashMap<String, Object>();
+            for (int j = 0; j < size; j++) {
+                bean.put(columns[j], rows[i][j]);
+            }
+            result.add(bean);
+        }
+        return result;
+    }
+
+    public static List<Object> toList(Object[] gridModel, String column) {
+        List<Object> result = new ArrayList<Object>();
+        String[] columns = (String[]) gridModel[0];
+        int size = columns.length;
+        int index;
+        for (index = 0; index < size; index++) {
+            if (column.equals(columns[index])) {
+                break;
+            }
+        }
+        if (index < size) {
+            Object[][] rows = (Object[][]) gridModel[1];
+            for (Object[] row : rows) {
+                result.add(row[index]);
+            }
+        }
+        return result;
     }
 
     // private static final String SET_METHOD = "set";

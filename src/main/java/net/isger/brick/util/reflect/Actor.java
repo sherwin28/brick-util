@@ -4,12 +4,9 @@ import java.util.Vector;
 
 import net.isger.brick.util.hitcher.Director;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class Actor extends Director {
 
-    private static final Logger LOG;
+    // private static final Logger LOG;
 
     private static final Actor ACTOR = new Actor();
 
@@ -19,9 +16,9 @@ public class Actor extends Director {
 
     private Vector<Action> actions;
 
-    static {
-        LOG = LoggerFactory.getLogger(Actor.class);
-    }
+    // static {
+    // LOG = LoggerFactory.getLogger(Actor.class);
+    // }
 
     protected Actor() {
         actions = new Vector<Action>();

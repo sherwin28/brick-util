@@ -9,11 +9,6 @@ public class DefaultHitch {
             return;
         }
         System.out.println("this is DefaultHitch.");
-        Converter converter = (Converter) source;
-        // converter.add(new ArrayAdapter());
-        // converter.add(new CollectionAdapter());
-        // converter.add(new MapAdapter());
-        // converter.add(new OrdinaryAdapter());
     }
 
 }

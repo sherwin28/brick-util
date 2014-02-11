@@ -29,7 +29,7 @@ public class BoundField {
 
     public void setValue(Object instance, Object value) {
         Class<?> type = field.getType();
-        if (value != null && !type.isInstance(value)) {
+        if (!type.isInstance(value)) {
             value = Converter.convert(type, value);
         }
         try {
@@ -47,6 +47,10 @@ public class BoundField {
             throw new IllegalStateException("Can not to access field "
                     + getName());
         }
+    }
+
+    public boolean match(String fieldName) {
+        return field.getName().equals(fieldName) || name.equals(fieldName);
     }
 
 }

@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.isger.brick.util.Reflects;
-import net.isger.brick.util.reflect.Conversion;
 
 public class MapAdapter {
 
@@ -25,7 +24,7 @@ public class MapAdapter {
             } else {
                 // map = type.newInstance();
             }
-
+            result = map;
         }
         return result;
     }

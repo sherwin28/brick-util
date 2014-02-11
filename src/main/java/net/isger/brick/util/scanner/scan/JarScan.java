@@ -1,4 +1,4 @@
-package net.isger.brick.util.hitcher.scan;
+package net.isger.brick.util.scanner.scan;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,7 +23,7 @@ public class JarScan extends AbstractScan {
     }
 
     public String[] scan(URL url, ScanFilter filter) {
-        if (url.getProtocol() != "jar") {
+        if (!"jar".equalsIgnoreCase(url.getProtocol())) {
             return null;
         }
         File workPath = null;

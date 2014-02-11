@@ -1,5 +1,6 @@
 package net.isger.brick.util.reflect;
 
+import java.lang.reflect.Array;
 import java.util.Map;
 import java.util.Vector;
 
@@ -41,12 +42,10 @@ public class Converter extends Director {
         return canonicalize(CONVERTER);
     }
 
-    public static void register(Conversion conversion) {
-        CONVERTER.add(conversion);
-    }
-
     public void add(Conversion conversion) {
-        LOG.info("Binding conversion {}", conversion);
+        if (LOG.isDebugEnabled()) {
+            LOG.info("Binding conversion {}", conversion.getClass().getName());
+        }
         conversions.add(conversion);
     }
 
@@ -79,19 +78,43 @@ public class Converter extends Director {
         for (Conversion conversion : converter.conversions) {
             if (conversion.isSupport(clazz)) {
                 try {
-                    return conversion.convert(value);
+                    return conversion.convert(clazz, value);
                 } catch (Exception e) {
-                    LOG.warn("Failure convert by {}", conversion, e);
                 }
             }
         }
-        if (clazz.isAssignableFrom(value.getClass())) {
+        if (value == null) {
+            return defaultValue(clazz);
+        }
+        Class<?> srcType = value.getClass();
+        if (srcType == null || clazz.isAssignableFrom(srcType)) {
             return value;
+        } else if (clazz.isArray() && srcType.isArray()) {
+
+        } else if (srcType.isArray()) {
+            if (Array.getLength(value) == 0) {
+                return defaultValue(clazz);
+            }
+            return convert(clazz, Array.get(value, 0));
+        } else if (clazz.isArray()) {
+            if (clazz.getComponentType().isAssignableFrom(srcType)) {
+                Object array = Array.newInstance(clazz.getComponentType(), 1);
+                Array.set(array, 0, value);
+                return array;
+            }
         } else if (value instanceof String) {
             return Reflects.newInstance((String) value);
         } else if (value instanceof Map) {
             return Reflects.newInstance(clazz, (Map<String, Object>) value);
         }
-        throw new IllegalStateException("Unsupported convert type " + clazz);
+        throw new IllegalStateException("Unsupported convert to "
+                + clazz.getName() + " from " + srcType.getName());
+    }
+
+    public static Object defaultValue(Class<?> clazz) {
+        if (clazz.isPrimitive()) {
+            return 0;
+        }
+        return null;
     }
 }

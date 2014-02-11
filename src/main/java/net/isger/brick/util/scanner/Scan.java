@@ -1,8 +1,8 @@
-package net.isger.brick.util.hitcher;
+package net.isger.brick.util.scanner;
 
 import java.net.URL;
 
-import net.isger.brick.util.hitcher.scan.ScanFilter;
+import net.isger.brick.util.scanner.scan.ScanFilter;
 
 public interface Scan {
 

@@ -60,22 +60,26 @@ public class Constructor extends Director {
         return false;
     }
 
-    public static Object construct(Class<?> clazz, Object... args) {
+    public static <T> T construct(Class<? extends T> clazz, Object... args) {
         Constructor constructor = getConstructor();
         for (Construction construction : constructor.constructions) {
             if (construction.isSupport(clazz)) {
                 try {
-                    return construction.construct(args);
+                    return construction.construct(clazz, args);
                 } catch (Exception e) {
                 }
             }
         }
         try {
-            return clazz.newInstance();
+            java.lang.reflect.Constructor<? extends T> cons = clazz
+                    .getDeclaredConstructor();
+            if (cons != null) {
+                cons.setAccessible(true);
+            }
+            return cons.newInstance();
         } catch (Exception e) {
             e.printStackTrace();
         }
         throw new IllegalStateException("Unsupported construct type " + clazz);
     }
-
 }

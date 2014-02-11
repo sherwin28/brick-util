@@ -10,6 +10,8 @@ public class DefaultHitch {
         }
         Converter converter = (Converter) source;
         converter.add(ClassConversion.CONVERSION);
+        converter.add(NumberConversion.CONVERSION);
+        converter.add(DateConversion.CONVERSION);
     }
 
 }

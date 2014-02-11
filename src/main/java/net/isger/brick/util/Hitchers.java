@@ -26,6 +26,7 @@ public class Hitchers {
         Hitcher hitcher = HITCHERS.get(path);
         if (hitcher == null) {
             hitcher = new Hitcher(path);
+            HITCHERS.put(path, hitcher);
         }
         return hitcher;
     }
